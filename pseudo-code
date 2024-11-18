@@ -1,0 +1,63 @@
+// Constants
+MAX_CAPACITY = 100
+SAFE_CAPACITY = 92
+DEVICE_MAX_CAPACITY = 40
+
+// Data Structures
+queue = [] // FIFO queue for devices, each element contains {id, consumption}
+current_usage = 0 // Tracks current power consumption
+
+// Helper Functions
+function allocate_power():
+    remaining_capacity = SAFE_CAPACITY - current_usage
+    for device in queue:
+        if remaining_capacity <= 0:
+            break
+        required_power = DEVICE_MAX_CAPACITY - device.consumption
+        allocated_power = min(required_power, remaining_capacity)
+        device.consumption += allocated_power
+        current_usage += allocated_power
+        remaining_capacity -= allocated_power
+
+function add_device(device_id):
+    if device_id in [device.id for device in queue]:
+        return // Device already connected, do nothing
+    queue.append({id: device_id, consumption: 0}) // New device starts with 0 consumption
+    allocate_power()
+
+function remove_device(device_id):
+    global current_usage
+    for device in queue:
+        if device.id == device_id:
+            current_usage -= device.consumption
+            queue.remove(device)
+            break
+    allocate_power()
+
+function change_consumption(device_id, new_consumption):
+    global current_usage
+    for device in queue:
+        if device.id == device_id:
+            delta = new_consumption - device.consumption
+            if delta > 0 and current_usage + delta <= SAFE_CAPACITY:
+                // Allow increase if safe
+                device.consumption += delta
+                current_usage += delta
+            elif delta < 0:
+                // Handle reduction
+                current_usage += delta // delta is negative, reducing usage
+                device.consumption = new_consumption
+            break
+    allocate_power()
+
+// Main Logic
+// Example Scenario Execution
+add_device("A") // Device A connects
+add_device("B") // Device B connects
+add_device("C") // Device C connects
+change_consumption("A", 20) // Device A reduces to 20 units
+remove_device("B") // Device B disconnects
+
+// Output Current Allocation
+for device in queue:
+    print("Device:", device.id, "Consumption:", device.consumption)
